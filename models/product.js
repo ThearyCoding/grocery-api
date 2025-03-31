@@ -1,5 +1,31 @@
 const mongoose = require("mongoose");
 
+const exclusiveOfferSchema = new mongoose.Schema(
+  {
+    isActive: {
+      type: Boolean,
+      default: false,
+    },
+    discountPercent: {
+      type: Number,
+      min: 0,
+      max: 100,
+      default: 0,
+    },
+    originalPrice: {
+      type: Number,
+    },
+    validUntil: {
+      type: Date,
+    },
+    badgeText: {
+      type: String,
+      default: "Exclusive Offer",
+    },
+  },
+  { _id: false }
+);
+
 const productSchema = new mongoose.Schema(
   {
     name: {
@@ -21,7 +47,7 @@ const productSchema = new mongoose.Schema(
     },
     sold: {
       type: Number,
-      default: 0
+      default: 0,
     },
     price: {
       type: Number,
@@ -31,14 +57,38 @@ const productSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
-
-    stock: { type: Number, default: 0 },
-    unit: { type: String, required: true },
-    sku: { type: String, required: true },
-    images: [{ type: String }],
+    stock: {
+      type: Number,
+      default: 0,
+    },
+    unit: {
+      type: String,
+      required: true,
+    },
+    sku: {
+      type: String,
+      required: true,
+    },
+    images: [
+      {
+        type: String,
+      },
+    ],
+    exclusiveOffer: exclusiveOfferSchema,
   },
   { timestamps: true }
 );
+
+productSchema.methods.getCurrentPrice = function () {
+  if (
+    this.exclusiveOffer.isActive &&
+    (!this.exclusiveOffer.validUntil ||
+      this.exclusiveOffer.validUntil > new Date())
+  ) {
+    return this.price * (1 - this.exclusiveOffer.discountPercent / 100);
+  }
+  return this.price;
+};
 
 const Product = mongoose.model("Product", productSchema);
 
