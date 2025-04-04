@@ -12,8 +12,12 @@ const categorySchema = mongoose.Schema({
   description: {
     type: String,
   },
+  image: {
+    type: String,
+    required: true,
+  },
 });
 
-const category = mongoose.model("Category",categorySchema);
+const category = mongoose.model("Category", categorySchema);
 
 module.exports = category;
