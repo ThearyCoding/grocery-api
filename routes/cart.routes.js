@@ -13,7 +13,7 @@ router.delete("/:userId", auth.authMedddleware, cartController.removeCart);
 router.delete("/items/:productId", auth.authMedddleware, cartController.removeCartItem);
 
 // Update the quantity of a specific item in the cart
-router.patch("/items/:userId/:productId", auth.authMedddleware, cartController.updateCartItemQuantity);
+router.patch("/items/:productId", auth.authMedddleware, cartController.updateCartItemQuantity);
 
 // Get cart details
 router.get("/",auth.authMedddleware, cartController.getCart);
