@@ -3,8 +3,8 @@ const Product = require("../models/product");
 
 exports.createCart = async (req, res) => {
   try {
-    const { userId, productId } = req.body;
-
+    const { productId } = req.body;
+    const userId = req.user.id;
     // Check if product exists
     const product = await Product.findById(productId);
     if (!product) {
