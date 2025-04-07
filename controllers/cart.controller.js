@@ -45,7 +45,7 @@ exports.createCart = async (req, res) => {
 
 exports.removeCart = async (req, res) => {
   try {
-    const { userId } = req.params;
+    const userId = req.user.id;
 
     const cart = await Cart.findOneAndDelete({ userId });
 
@@ -61,7 +61,7 @@ exports.removeCart = async (req, res) => {
 
 exports.removeCartItem = async (req, res) => {
   try {
-    const {  productId } = req.params;
+    const { productId } = req.params;
     const userId = req.user.id;
     let cart = await Cart.findOne({ userId });
 
@@ -87,7 +87,8 @@ exports.removeCartItem = async (req, res) => {
 
 exports.updateCartItemQuantity = async (req, res) => {
   try {
-    const { userId, productId } = req.params;
+    const { productId } = req.params;
+    const userId = req.user.id;
     const { quantity } = req.body;
 
     let cart = await Cart.findOne({ userId });
@@ -129,12 +130,12 @@ exports.getCart = async (req, res) => {
     const cartResponse = {
       _id: cart._id,
       userId: cart.userId,
-      items: cart.items.map(item => ({
+      items: cart.items.map((item) => ({
         _id: item._id,
         quantity: item.quantity,
         addedAt: item.addedAt,
-        product: item.productId, 
-      }))
+        product: item.productId,
+      })),
     };
     res.status(200).json(cartResponse);
   } catch (error) {

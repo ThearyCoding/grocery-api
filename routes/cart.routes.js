@@ -7,13 +7,13 @@ const auth = require("../middlewares/auth");
 router.post("/",auth.authMedddleware, cartController.createCart);
 
 // Remove entire cart for a user
-router.delete("/:userId", cartController.removeCart);
+router.delete("/:userId", auth.authMedddleware, cartController.removeCart);
 
 // Remove a specific item from the cart
 router.delete("/items/:productId", auth.authMedddleware, cartController.removeCartItem);
 
 // Update the quantity of a specific item in the cart
-router.patch("/items/:userId/:productId", cartController.updateCartItemQuantity);
+router.patch("/items/:userId/:productId", auth.authMedddleware, cartController.updateCartItemQuantity);
 
 // Get cart details
 router.get("/",auth.authMedddleware, cartController.getCart);
