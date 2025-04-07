@@ -116,11 +116,11 @@ exports.updateCartItemQuantity = async (req, res) => {
 
 exports.getCart = async (req, res) => {
   try {
-    const { userId } = req.query;
+    const userId = req.user.id;
 
     const cart = await Cart.findOne({ userId }).populate(
       "items.productId",
-      "name price"
+      "name price images unit"
     );
 
     if (!cart) {
