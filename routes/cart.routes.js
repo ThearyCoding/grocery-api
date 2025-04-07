@@ -10,7 +10,7 @@ router.post("/",auth.authMedddleware, cartController.createCart);
 router.delete("/:userId", cartController.removeCart);
 
 // Remove a specific item from the cart
-router.delete("/items/:userId/:productId", cartController.removeCartItem);
+router.delete("/items/:productId", auth.authMedddleware, cartController.removeCartItem);
 
 // Update the quantity of a specific item in the cart
 router.patch("/items/:userId/:productId", cartController.updateCartItemQuantity);
