@@ -42,8 +42,19 @@ exports.getWishlist = async (req, res) => {
     if (!wishlist) {
       return res.status(404).json({ message: "Wishlist not found." });
     }
+    const wishlistResonse = wishlist.items.map(item => ({
+      ...item._doc,
+      product: item.productId,
+      productId: undefined,
+    }));
 
-    res.status(200).json({ wishlist });
+
+
+    res.status(200).json({ 
+      _id: wishlist._id,
+      userId: wishlist.userId,
+      items: wishlistResonse
+     });
   } catch (error) {
     res.status(500).json({ message: "Error: " + error.message });
   }
