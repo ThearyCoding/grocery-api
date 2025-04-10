@@ -105,17 +105,17 @@ exports.isInWishlist = async (req, res) => {
     const { productId } = req.params;
     const userId = req.user.id;
 
-    const wishlist = await Wishlist.findOne({ userId });
-
-    if (!wishlist) {
-      return res.status(200).json(false);
-    }
-
-    const exists = wishlist.items.some(
-      (item) => item.productId.toString() === productId.toString()
+    const wishlist = await Wishlist.findOne(
+      {
+        userId,
+        "items.productId": productId
+      },
+      { _id: 1 }
     );
 
-    res.status(200).json(exists);
+    const isInWishlist = !!wishlist;
+
+    res.status(200).json(isInWishlist);
   } catch (error) {
     res.status(500).json({ message: "Error: " + error.message });
   }
