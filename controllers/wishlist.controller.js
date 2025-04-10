@@ -23,7 +23,7 @@ exports.addToWishlist = async (req, res) => {
     }
 
     await wishlist.save();
-    res.status(201).json({ message: "Product added to wishlist.", wishlist });
+    res.status(201).json({ message: "Product added to wishlist."});
   } catch (error) {
     res.status(500).json({ message: "Error: " + error.message });
   }
