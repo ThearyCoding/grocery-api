@@ -14,4 +14,7 @@ router.delete("/:productId",auth.authMedddleware, wishlistController.removeFromW
 // Clear entire wishlist
 router.delete("/",auth.authMedddleware, wishlistController.clearWishlist);
 
+// Check if a specific product is in the user's wishlist
+router.get("/is-in-wishlist/:productId", authMiddleware, wishlistController.isInWishlist);
+
 module.exports = router;

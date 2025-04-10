@@ -98,3 +98,26 @@ exports.clearWishlist = async (req, res) => {
     res.status(500).json({ message: "Error: " + error.message });
   }
 };
+
+// Check if a product is in the user's wishlist
+exports.isInWishlist = async (req, res) => {
+  try {
+    const { productId } = req.params;
+    const userId = req.user.id;
+
+    const wishlist = await Wishlist.findOne({ userId });
+
+    if (!wishlist) {
+      return res.status(200).json(false);
+    }
+
+    const exists = wishlist.items.some(
+      (item) => item.productId.toString() === productId.toString()
+    );
+
+    res.status(200).json(exists);
+  } catch (error) {
+    res.status(500).json({ message: "Error: " + error.message });
+  }
+};
+
