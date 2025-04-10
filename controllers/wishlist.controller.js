@@ -1,11 +1,10 @@
 const Product = require("../models/product");
 const Wishlist = require("../models/wishlist");
 
-
 // Add product to wishlist
 exports.addToWishlist = async (req, res) => {
   try {
-    const {  productId } = req.body;
+    const { productId } = req.body;
     const userId = req.user.id;
     let wishlist = await Wishlist.findOne({ userId });
 
@@ -13,7 +12,7 @@ exports.addToWishlist = async (req, res) => {
       wishlist = new Wishlist({ userId, items: [{ productId }] });
     } else {
       const exists = wishlist.items.find(
-        (item) => item.productId.toString() === productId
+        (item) => item.productId.toString() === productId.toString()
       );
       if (exists) {
         return res
@@ -33,7 +32,7 @@ exports.addToWishlist = async (req, res) => {
 // Get user's wishlist
 exports.getWishlist = async (req, res) => {
   try {
-    const userId  = req.user.id;
+    const userId = req.user.id;
     const wishlist = await Wishlist.findOne({ userId }).populate(
       "items.productId",
       "name price images unit"
@@ -42,19 +41,17 @@ exports.getWishlist = async (req, res) => {
     if (!wishlist) {
       return res.status(404).json({ message: "Wishlist not found." });
     }
-    const wishlistResonse = wishlist.items.map(item => ({
+    const wishlistResonse = wishlist.items.map((item) => ({
       ...item._doc,
       product: item.productId,
       productId: undefined,
     }));
 
-
-
-    res.status(200).json({ 
+    res.status(200).json({
       _id: wishlist._id,
       userId: wishlist.userId,
-      items: wishlistResonse
-     });
+      items: wishlistResonse,
+    });
   } catch (error) {
     res.status(500).json({ message: "Error: " + error.message });
   }
@@ -86,7 +83,7 @@ exports.removeFromWishlist = async (req, res) => {
 // Clear wishlist
 exports.clearWishlist = async (req, res) => {
   try {
-    const userId  = req.user.id;
+    const userId = req.user.id;
     const wishlist = await Wishlist.findOneAndDelete({ userId });
 
     if (!wishlist) {
@@ -108,7 +105,7 @@ exports.isInWishlist = async (req, res) => {
     const wishlist = await Wishlist.findOne(
       {
         userId,
-        "items.productId": productId
+        "items.productId": productId,
       },
       { _id: 1 }
     );
@@ -120,4 +117,3 @@ exports.isInWishlist = async (req, res) => {
     res.status(500).json({ message: "Error: " + error.message });
   }
 };
-
