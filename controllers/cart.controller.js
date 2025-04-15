@@ -79,7 +79,7 @@ exports.removeCartItem = async (req, res) => {
     cart.items.splice(itemIndex, 1);
     await cart.save();
 
-    res.status(200).json({ message: "Cart item removed.", cart });
+    res.status(200).json({ message: "Cart item removed."});
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
