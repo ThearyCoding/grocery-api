@@ -185,3 +185,57 @@ exports.createProduct = async (req, res) => {
     });
   }
 };
+
+exports.getSingleProduct = async (req, res) => {
+  try {
+    const productId = req.params.id;
+
+    const product = await Product.findById(productId)
+      .populate("category", "name")
+      .populate("brand", "name")
+      .lean();
+
+    if (!product) {
+      return res.status(404).json({
+        message: "Product not found",
+      });
+    }
+
+    const getCurrentPrice = (product) => {
+      if (
+        product.exclusiveOffer?.isActive &&
+        (!product.exclusiveOffer.validUntil ||
+          new Date(product.exclusiveOffer.validUntil) > new Date())
+      ) {
+        return (
+          product.price * (1 - product.exclusiveOffer.discountPercent / 100)
+        );
+      }
+      return product.price;
+    };
+
+    const currentPrice = getCurrentPrice(product);
+    const isOfferActive = product.exclusiveOffer?.isActive;
+    const isOfferValid =
+      !product.exclusiveOffer?.validUntil ||
+      new Date(product.exclusiveOffer.validUntil) > new Date();
+
+    const enhancedProduct = {
+      ...product,
+      currentPrice,
+      hasActiveOffer: isOfferActive && isOfferValid,
+    };
+
+    res.status(200).json({
+      product: enhancedProduct,
+    });
+  } catch (error) {
+    console.error("Error fetching single product:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching single product",
+      error: error.message,
+      stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
+    });
+  }
+};

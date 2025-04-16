@@ -5,5 +5,6 @@ const router = exprees.Router();
 
 router.get("/",productController.getProducts);
 router.post("/", productController.createProduct);
+router.get("/:id", productController.getSingleProduct);
 
 module.exports = router;
