@@ -17,7 +17,8 @@ exports.getProducts = async (req, res) => {
 
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
-    const { category, brand, minPrice, maxPrice, search, sort } = req.query;
+    const { category, brand, minPrice, maxPrice, search, sort, autocomplete } =
+      req.query;
 
     let filter = {};
 
@@ -35,6 +36,39 @@ exports.getProducts = async (req, res) => {
         $regex: search,
         $options: "i",
       };
+    }
+
+    if (autocomplete == "true") {
+      const suggestions = await Product.find(
+        filter,
+        "_id name price unit images exclusiveOffer"
+      )
+        .sort({ name: 1 })
+        .limit(10)
+        .lean();
+      const responseSuggestions = suggestions.map((product) => {
+        const currentPrice = getCurrentPrice(product);
+        const isOfferActive = product.exclusiveOffer?.isActive;
+        const isOfferValid =
+          !product.exclusiveOffer?.validUntil ||
+          new Date(product.exclusiveOffer.validUntil) > new Date();
+        return {
+          _id: product._id,
+          name: product.name,
+          price: product.price,
+          unit: product.unit,
+          images: product.images,
+          exclusiveOffer: product.exclusiveOffer,
+          currentPrice: currentPrice,
+          hasActiveOffer: isOfferActive && isOfferValid
+        }
+
+      });
+
+      return res.status(200).json({
+        success: true,
+        suggestions: responseSuggestions,
+      });
     }
 
     let sortOption = {};
