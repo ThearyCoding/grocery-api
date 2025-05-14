@@ -1,240 +1,240 @@
 const Product = require("../models/product");
-const { OpenAI } = require('openai');
+// const { OpenAI } = require('openai');
 
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-  baseURL: "https://models.inference.ai.azure.com"
-});
-const { TfIdf, PorterStemmer } = require('natural');
-const mongoose = require("mongoose");
-const stopwords = require('natural').stopwords;
+// const openai = new OpenAI({
+//   apiKey: process.env.OPENAI_API_KEY,
+//   baseURL: "https://models.inference.ai.azure.com"
+// });
+// const { TfIdf, PorterStemmer } = require('natural');
+// const mongoose = require("mongoose");
+// const stopwords = require('natural').stopwords;
 
-// Helper functions
-function calculateCurrentPrice(product) {
-  return product.exclusiveOffer?.isActive && 
-    (!product.exclusiveOffer.validUntil || new Date(product.exclusiveOffer.validUntil) > new Date())
-    ? product.price * (1 - product.exclusiveOffer.discountPercent / 100)
-    : product.price;
-}
+// // Helper functions
+// function calculateCurrentPrice(product) {
+//   return product.exclusiveOffer?.isActive && 
+//     (!product.exclusiveOffer.validUntil || new Date(product.exclusiveOffer.validUntil) > new Date())
+//     ? product.price * (1 - product.exclusiveOffer.discountPercent / 100)
+//     : product.price;
+// }
 
-function hasActiveOffer(product) {
-  return product.exclusiveOffer?.isActive && 
-    (!product.exclusiveOffer.validUntil || new Date(product.exclusiveOffer.validUntil) > new Date());
-}
+// function hasActiveOffer(product) {
+//   return product.exclusiveOffer?.isActive && 
+//     (!product.exclusiveOffer.validUntil || new Date(product.exclusiveOffer.validUntil) > new Date());
+// }
 
-// Enhanced text processing
-function processText(text) {
-  if (!text) return '';
-  return text.toLowerCase()
-    .replace(/[^\w\s]/g, '') // Remove punctuation
-    .split(/\s+/)
-    .filter(token => token.length > 2 && !stopwords.includes(token))
-    .map(token => PorterStemmer.stem(token))
-    .join(' ');
-}
+// // Enhanced text processing
+// function processText(text) {
+//   if (!text) return '';
+//   return text.toLowerCase()
+//     .replace(/[^\w\s]/g, '') // Remove punctuation
+//     .split(/\s+/)
+//     .filter(token => token.length > 2 && !stopwords.includes(token))
+//     .map(token => PorterStemmer.stem(token))
+//     .join(' ');
+// }
 
-exports.getRecommendedProducts = async (req, res) => {
-  try {
-    const { productId } = req.params;
-    const limit = parseInt(req.query.limit) || 5;
-    const startTime = Date.now();
+// exports.getRecommendedProducts = async (req, res) => {
+//   try {
+//     const { productId } = req.params;
+//     const limit = parseInt(req.query.limit) || 5;
+//     const startTime = Date.now();
 
-    // 1. Get the target product
-    const targetProduct = await Product.findById(productId)
-      .select('name category brand price exclusiveOffer description images')
-      .populate('category', 'name')
-      .populate('brand', 'name')
-      .lean();
+//     // 1. Get the target product
+//     const targetProduct = await Product.findById(productId)
+//       .select('name category brand price exclusiveOffer description images')
+//       .populate('category', 'name')
+//       .populate('brand', 'name')
+//       .lean();
 
-    if (!targetProduct) {
-      return res.status(404).json({
-        success: false,
-        message: 'Product not found',
-      });
-    }
+//     if (!targetProduct) {
+//       return res.status(404).json({
+//         success: false,
+//         message: 'Product not found',
+//       });
+//     }
 
-    // 2. Get candidate products - start with same category
-    const candidateFilter = {
-      _id: { $ne: productId },
-      category: targetProduct.category._id,
-      price: {
-        $gte: targetProduct.price * 0.5,
-        $lte: targetProduct.price * 1.5
-      }
-    };
+//     // 2. Get candidate products - start with same category
+//     const candidateFilter = {
+//       _id: { $ne: productId },
+//       category: targetProduct.category._id,
+//       price: {
+//         $gte: targetProduct.price * 0.5,
+//         $lte: targetProduct.price * 1.5
+//       }
+//     };
 
-    let candidates = await Product.find(candidateFilter)
-      .select('name category brand price exclusiveOffer description images')
-      .populate('category', 'name')
-      .populate('brand', 'name')
-      .limit(50)
-      .lean();
+//     let candidates = await Product.find(candidateFilter)
+//       .select('name category brand price exclusiveOffer description images')
+//       .populate('category', 'name')
+//       .populate('brand', 'name')
+//       .limit(50)
+//       .lean();
 
-    // 3. If not enough same-category candidates, supplement with others
-    if (candidates.length < 15) {
-      const additionalCandidates = await Product.find({
-        _id: { $ne: productId, $nin: candidates.map(c => c._id) },
-        price: {
-          $gte: targetProduct.price * 0.3,
-          $lte: targetProduct.price * 1.7
-        }
-      })
-      .select('name category brand price exclusiveOffer description images')
-      .populate('category', 'name')
-      .populate('brand', 'name')
-      .limit(30 - candidates.length) // Fill up to 30 total
-      .lean();
+//     // 3. If not enough same-category candidates, supplement with others
+//     if (candidates.length < 15) {
+//       const additionalCandidates = await Product.find({
+//         _id: { $ne: productId, $nin: candidates.map(c => c._id) },
+//         price: {
+//           $gte: targetProduct.price * 0.3,
+//           $lte: targetProduct.price * 1.7
+//         }
+//       })
+//       .select('name category brand price exclusiveOffer description images')
+//       .populate('category', 'name')
+//       .populate('brand', 'name')
+//       .limit(30 - candidates.length) // Fill up to 30 total
+//       .lean();
 
-      candidates.push(...additionalCandidates);
-    }
+//       candidates.push(...additionalCandidates);
+//     }
 
-    // 4. Prepare documents for enhanced TF-IDF with field weighting
-    const tfidf = new TfIdf();
-    const documents = [];
+//     // 4. Prepare documents for enhanced TF-IDF with field weighting
+//     const tfidf = new TfIdf();
+//     const documents = [];
     
-    // Process target product with field weights
-    const targetFields = {
-      name: targetProduct.name || '',
-      category: targetProduct.category?.name || '',
-      brand: targetProduct.brand?.name || '',
-      description: targetProduct.description || ''
-    };
+//     // Process target product with field weights
+//     const targetFields = {
+//       name: targetProduct.name || '',
+//       category: targetProduct.category?.name || '',
+//       brand: targetProduct.brand?.name || '',
+//       description: targetProduct.description || ''
+//     };
     
-    const targetText = [
-      ...Array(3).fill(targetFields.name), // 3x weight for name
-      ...Array(2).fill(targetFields.category), // 2x weight for category
-      targetFields.brand,
-      targetFields.description
-    ].join(' ');
+//     const targetText = [
+//       ...Array(3).fill(targetFields.name), // 3x weight for name
+//       ...Array(2).fill(targetFields.category), // 2x weight for category
+//       targetFields.brand,
+//       targetFields.description
+//     ].join(' ');
     
-    const processedTarget = processText(targetText);
-    tfidf.addDocument(processedTarget);
-    documents.push({ 
-      id: targetProduct._id.toString(), 
-      isTarget: true,
-      price: targetProduct.price,
-      categoryId: targetProduct.category._id.toString()
-    });
+//     const processedTarget = processText(targetText);
+//     tfidf.addDocument(processedTarget);
+//     documents.push({ 
+//       id: targetProduct._id.toString(), 
+//       isTarget: true,
+//       price: targetProduct.price,
+//       categoryId: targetProduct.category._id.toString()
+//     });
 
-    // Process candidates
-    candidates.forEach(product => {
-      const candidateFields = {
-        name: product.name || '',
-        category: product.category?.name || '',
-        brand: product.brand?.name || '',
-        description: product.description || ''
-      };
+//     // Process candidates
+//     candidates.forEach(product => {
+//       const candidateFields = {
+//         name: product.name || '',
+//         category: product.category?.name || '',
+//         brand: product.brand?.name || '',
+//         description: product.description || ''
+//       };
       
-      const candidateText = [
-        ...Array(3).fill(candidateFields.name),
-        ...Array(2).fill(candidateFields.category),
-        candidateFields.brand,
-        candidateFields.description
-      ].join(' ');
+//       const candidateText = [
+//         ...Array(3).fill(candidateFields.name),
+//         ...Array(2).fill(candidateFields.category),
+//         candidateFields.brand,
+//         candidateFields.description
+//       ].join(' ');
       
-      const processedCandidate = processText(candidateText);
-      tfidf.addDocument(processedCandidate);
-      documents.push({ 
-        id: product._id.toString(), 
-        text: processedCandidate,
-        price: product.price,
-        categoryId: product.category._id.toString(),
-        productData: product // Store for later use
-      });
-    });
+//       const processedCandidate = processText(candidateText);
+//       tfidf.addDocument(processedCandidate);
+//       documents.push({ 
+//         id: product._id.toString(), 
+//         text: processedCandidate,
+//         price: product.price,
+//         categoryId: product.category._id.toString(),
+//         productData: product // Store for later use
+//       });
+//     });
 
-    // 5. Calculate cosine similarities with price and category factors
-    const similarities = [];
-    const targetVector = {};
-    const targetPrice = targetProduct.price;
-    const targetCategoryId = targetProduct.category._id.toString();
+//     // 5. Calculate cosine similarities with price and category factors
+//     const similarities = [];
+//     const targetVector = {};
+//     const targetPrice = targetProduct.price;
+//     const targetCategoryId = targetProduct.category._id.toString();
     
-    // Get TF-IDF vector for target
-    tfidf.tfidfs(processedTarget, (index, measure) => {
-      targetVector[index] = measure;
-    });
+//     // Get TF-IDF vector for target
+//     tfidf.tfidfs(processedTarget, (index, measure) => {
+//       targetVector[index] = measure;
+//     });
 
-    // Compare with candidates
-    documents.filter(doc => !doc.isTarget).forEach(doc => {
-      // Text similarity (cosine)
-      let dotProduct = 0;
-      let candidateMagnitude = 0;
-      const candidateVector = {};
+//     // Compare with candidates
+//     documents.filter(doc => !doc.isTarget).forEach(doc => {
+//       // Text similarity (cosine)
+//       let dotProduct = 0;
+//       let candidateMagnitude = 0;
+//       const candidateVector = {};
       
-      tfidf.tfidfs(doc.text, (index, measure) => {
-        candidateVector[index] = measure;
-        if (targetVector[index]) {
-          dotProduct += targetVector[index] * measure;
-        }
-        candidateMagnitude += measure * measure;
-      });
+//       tfidf.tfidfs(doc.text, (index, measure) => {
+//         candidateVector[index] = measure;
+//         if (targetVector[index]) {
+//           dotProduct += targetVector[index] * measure;
+//         }
+//         candidateMagnitude += measure * measure;
+//       });
 
-      const targetMagnitude = Object.values(targetVector)
-        .reduce((sum, val) => sum + val * val, 0);
+//       const targetMagnitude = Object.values(targetVector)
+//         .reduce((sum, val) => sum + val * val, 0);
       
-      const textSimilarity = dotProduct / 
-        (Math.sqrt(targetMagnitude) * Math.sqrt(candidateMagnitude)) || 0;
+//       const textSimilarity = dotProduct / 
+//         (Math.sqrt(targetMagnitude) * Math.sqrt(candidateMagnitude)) || 0;
 
-      // Price similarity (0-1 scale)
-      const priceDiff = Math.abs(doc.price - targetPrice);
-      const maxPriceDiff = targetPrice * 0.5; // Max we consider relevant
-      const priceSimilarity = Math.max(0, 1 - (priceDiff / maxPriceDiff));
+//       // Price similarity (0-1 scale)
+//       const priceDiff = Math.abs(doc.price - targetPrice);
+//       const maxPriceDiff = targetPrice * 0.5; // Max we consider relevant
+//       const priceSimilarity = Math.max(0, 1 - (priceDiff / maxPriceDiff));
 
-      // Category bonus
-      const categoryBonus = doc.categoryId === targetCategoryId ? 0.2 : 0;
+//       // Category bonus
+//       const categoryBonus = doc.categoryId === targetCategoryId ? 0.2 : 0;
 
-      // Combined score (60% text, 30% price, 10% category)
-      const combinedSimilarity = 
-        (0.6 * textSimilarity) + 
-        (0.3 * priceSimilarity) + 
-        (0.1 * categoryBonus);
+//       // Combined score (60% text, 30% price, 10% category)
+//       const combinedSimilarity = 
+//         (0.6 * textSimilarity) + 
+//         (0.3 * priceSimilarity) + 
+//         (0.1 * categoryBonus);
 
-      similarities.push({
-        id: doc.id,
-        similarity: combinedSimilarity,
-        productData: doc.productData
-      });
-    });
+//       similarities.push({
+//         id: doc.id,
+//         similarity: combinedSimilarity,
+//         productData: doc.productData
+//       });
+//     });
 
-    // 6. Sort by combined similarity and get top recommendations
-    const recommendedProducts = similarities
-      .sort((a, b) => b.similarity - a.similarity)
-      .slice(0, limit)
-      .map(item => ({
-        ...item.productData,
-        currentPrice: calculateCurrentPrice(item.productData),
-        hasActiveOffer: hasActiveOffer(item.productData),
-        similarityScore: item.similarity // Include for debugging
-      }));
+//     // 6. Sort by combined similarity and get top recommendations
+//     const recommendedProducts = similarities
+//       .sort((a, b) => b.similarity - a.similarity)
+//       .slice(0, limit)
+//       .map(item => ({
+//         ...item.productData,
+//         currentPrice: calculateCurrentPrice(item.productData),
+//         hasActiveOffer: hasActiveOffer(item.productData),
+//         similarityScore: item.similarity // Include for debugging
+//       }));
 
-    // 7. Prepare response
-    const response = {
-      success: true,
-      originalProduct: {
-        ...targetProduct,
-        currentPrice: calculateCurrentPrice(targetProduct),
-        hasActiveOffer: hasActiveOffer(targetProduct)
-      },
-      recommendedProducts,
-      processingTime: Date.now() - startTime
-    };
+//     // 7. Prepare response
+//     const response = {
+//       success: true,
+//       originalProduct: {
+//         ...targetProduct,
+//         currentPrice: calculateCurrentPrice(targetProduct),
+//         hasActiveOffer: hasActiveOffer(targetProduct)
+//       },
+//       recommendedProducts,
+//       processingTime: Date.now() - startTime
+//     };
 
-    if (process.env.NODE_ENV === 'production') {
-      response.recommendedProducts.forEach(p => delete p.similarityScore);
-    }
+//     if (process.env.NODE_ENV === 'production') {
+//       response.recommendedProducts.forEach(p => delete p.similarityScore);
+//     }
 
-    res.status(200).json(response);
+//     res.status(200).json(response);
 
-  } catch (error) {
-    console.error('Error getting recommendations:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error getting recommendations',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
-  }
-};
+//   } catch (error) {
+//     console.error('Error getting recommendations:', error);
+//     res.status(500).json({
+//       success: false,
+//       message: 'Error getting recommendations',
+//       error: process.env.NODE_ENV === 'development' ? error.message : undefined
+//     });
+//   }
+// };
 exports.getProducts = async (req, res) => {
   try {
     const getCurrentPrice = (product) => {
