@@ -27,6 +27,7 @@ app.use("/api/wishlists", require("./routes/wishlist.routes"));
 app.use("/api/orders", require("./routes/order.routes"));
 app.use("/api/shippingAddress", require("./routes/shipping_address.routes"));
 app.use("/api/auth", require("./routes/auth.routes"));
+app.use("/api/address",require("./routes/address.routes"));
 const PORT = 3000;
 app.listen(PORT, () => {
   console.log("server is running on port " + PORT);

@@ -79,6 +79,19 @@ const productSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+productSchema.methods.getProductDescriptionForAI = function() {
+  return `
+    Product: ${this.name}
+    Category: ${this.category?.name || 'Unknown'}
+    Brand: ${this.brand?.name || 'Unknown'}
+    Price: ${this.price}
+    Description: ${this.description}
+    Rating: ${this.rating}
+    Unit: ${this.unit}
+    Current Offer: ${this.exclusiveOffer?.isActive ? `${this.exclusiveOffer.discountPercent}% off` : 'None'}
+  `.trim();
+};
+
 productSchema.methods.getCurrentPrice = function () {
   if (
     this.exclusiveOffer.isActive &&
