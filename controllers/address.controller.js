@@ -18,3 +18,15 @@ exports.createAddress = async (req,res) => {
             message: error.message});
     }
 }
+
+exports.getAddresses = async (req,res) => {
+    try {
+        const userId = req.user.id;
+        const addresses = await Address.find({userId});
+        res.status(200).json({success: true, data: addresses});
+    } catch (error) {
+        res.status(400).json({
+            success: false,
+            message: "Error getAddress: " + error.message});
+    }
+}
