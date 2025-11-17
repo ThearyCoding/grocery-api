@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 
-exports.authMedddleware = (req,res,next) => {
+exports.AuthMiddleware = (req,res,next) => {
     try {
         const token = req.header("Authorization");
         if(!token){

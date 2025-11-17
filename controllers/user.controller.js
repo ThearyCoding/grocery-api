@@ -44,7 +44,6 @@ exports.login = async (req, res) => {
     if (!isMatch) {
       return res.status(400).json({ message: "Invalid email and password." });
     }
-    console.log(user._id);
     const token = generateToken(user._id);
     res.status(201).json({ message: "Login Successfully.", user: user , token: token });
   } catch (error) {

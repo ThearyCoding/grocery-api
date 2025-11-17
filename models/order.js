@@ -8,6 +8,7 @@ const orderSchema = new mongoose.Schema({
   },
   items: [
     {
+      reviewed: { type: Boolean, default: false },
       productId: {
         type: mongoose.Types.ObjectId,
         ref: "Product",
@@ -21,7 +22,7 @@ const orderSchema = new mongoose.Schema({
         type: Number,
         required: true,
       },
-      subtotal: { 
+      subtotal: {
         type: Number,
         required: true,
       },
@@ -32,7 +33,7 @@ const orderSchema = new mongoose.Schema({
   //   ref: "Payment",
   // },
   promoCode: {
-    type: String, 
+    type: String,
     default: ""
   },
   discount: {
@@ -41,7 +42,7 @@ const orderSchema = new mongoose.Schema({
   },
   orderStatus: {
     type: String,
-    enum: ["Pending","Accepted","Processing", "Shipped", "Delivered", "Cancelled"],
+    enum: ["Pending", "Accepted", "Processing", "Shipped", "Delivered", "Cancelled"],
     default: "Pending",
   },
   totalAmount: {

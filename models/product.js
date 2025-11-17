@@ -53,10 +53,8 @@ const productSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
-    rating: {
-      type: Number,
-      default: 0,
-    },
+    rating: { type: Number, default: 0 },      
+    ratingCount: { type: Number, default: 0 },
     stock: {
       type: Number,
       default: 0,

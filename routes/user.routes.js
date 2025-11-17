@@ -6,5 +6,5 @@ const router  = exprees.Router();
 
 router.post("/register",UserController.register);
 router.post("/login",UserController.login);
-router.get("/profile",authMiddleware.authMedddleware,  UserController.getUser)
+router.get("/profile",authMiddleware.AuthMiddleware,  UserController.getUser)
 module.exports = router;

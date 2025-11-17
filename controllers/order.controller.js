@@ -3,6 +3,7 @@ const Product = require("../models/product");
 const Address = require("../models/address");
 const PromoCode = require("../models/promoCode");
 const Cart = require("../models/cart");
+const { sendToToken } = require("../services/fcm.service");
 exports.createOrder = async (req, res) => {
   try {
     const { items, paymentId, promoCode, totalAmount, addressId } = req.body;
@@ -185,5 +186,18 @@ exports.getMyOrderDetails = async (req, res) => {
     });
   } catch (e) {
     res.status(500).json({ success: false, message: "Error get order details" + e.message });
+  }
+}
+
+exports.updateOrderStatus = async (req,res)=> {
+  try{
+    const {id,orderStatus,token,title,body,route_name} = req.body;
+
+    const order = await Order.updateOne({_id: id},{orderStatus});
+await sendToToken({token,title,body,route_name,id});
+    res.status(200).json({message: "Order updated succssfully."});
+
+  }catch(e){
+    res.status(500).json({message: "Error Update order status: " + e.message});
   }
 }

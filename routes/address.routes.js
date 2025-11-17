@@ -1,11 +1,11 @@
 const {
-createAddress,
-getAddresses
+    createAddress,
+    getAddresses
 } = require("../controllers/address.controller");
 const express = require("express");
-const {authMedddleware} = require("../middlewares/auth");
+const { AuthMiddleware } = require("../middlewares/auth");
 const router = express.Router();
 
-router.post("/",authMedddleware,createAddress);
-router.get("/",authMedddleware,getAddresses);
+router.post("/", AuthMiddleware, createAddress);
+router.get("/", AuthMiddleware, getAddresses);
 module.exports = router;
